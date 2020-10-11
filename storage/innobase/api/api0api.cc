@@ -69,13 +69,19 @@ ulong ib_trx_level_setting = IB_TRX_READ_UNCOMMITTED;
 /** configure variable for background commit interval in seconds */
 ulong ib_bk_commit_interval = 0;
 
-/** InnoDB tuple types. */
+/** InnoDB tuple types.
+ * 元组的类型  数据行 或者 索引
+ * */
 enum ib_tuple_type_t{
 	TPL_TYPE_ROW,			/*!< Data row tuple */
 	TPL_TYPE_KEY			/*!< Index key tuple */
 };
 
-/** Query types supported. */
+/** Query types supported.
+ * 查询的类型
+ * 需要注意的是 没有删除类型
+ * 删除只是更新 元组的一个特殊标记
+ * */
 enum ib_qry_type_t{
 	QRY_NON,			/*!< None/Sentinel */
 	QRY_INS,			/*!< Insert operation */
@@ -83,7 +89,9 @@ enum ib_qry_type_t{
 	QRY_SEL				/*!< Select operation */
 };
 
-/** Query graph types. */
+/** Query graph types.
+ * 查询  图 的类型
+ * */
 struct ib_qry_grph_t {
 	que_fork_t*	ins;		/*!< Innobase SQL query graph used
 					in inserts */
@@ -93,7 +101,9 @@ struct ib_qry_grph_t {
 					selects */
 };
 
-/** Query node types. */
+/** Query node types.
+ * 查询节点的类型
+ * */
 struct ib_qry_node_t {
 	ins_node_t*	ins;		/*!< Innobase SQL insert node
 					used to perform inserts to the table */
@@ -103,7 +113,9 @@ struct ib_qry_node_t {
 					used to perform selects on the table */
 };
 
-/** Query processing fields. */
+/** Query processing fields.
+ * 查询进程
+ * */
 struct ib_qry_proc_t {
 
 	ib_qry_node_t	node;		/*!< Query node*/
@@ -112,22 +124,27 @@ struct ib_qry_proc_t {
 };
 
 /** Cursor instance for traversing tables/indexes. This will eventually
-become row_prebuilt_t. */
+become row_prebuilt_t.
+ *查询游标
+ * 建立查询的预期
+ */
 struct ib_cursor_t {
-	mem_heap_t*	heap;		/*!< Instance heap */
+	mem_heap_t*	heap;		/*!< Instance heap   实例的内存堆 ，简单来说 每个查询都会产生一个堆？  */
 
-	mem_heap_t*	query_heap;	/*!< Heap to use for query graphs */
+	mem_heap_t*	query_heap;	/*!< Heap to use for query graphs    查询的图堆 */
 
-	ib_qry_proc_t	q_proc;		/*!< Query processing info */
+	ib_qry_proc_t	q_proc;		/*!< Query processing info 查询的 进程 结构*/
 
-	ib_match_mode_t	match_mode;	/*!< ib_cursor_moveto match mode */
+	ib_match_mode_t	match_mode;	/*!< ib_cursor_moveto match mode  */
 
-	row_prebuilt_t*	prebuilt;	/*!< For reading rows */
+	row_prebuilt_t*	prebuilt;	/*!< For reading rows  建立的预读图 */
 
-	bool		valid_trx;	/*!< Valid transaction attached */
+	bool		valid_trx;	/*!< Valid transaction attached  是否需要事务 */
 };
 
-/** InnoDB table columns used during table and index schema creation. */
+/** InnoDB table columns used during table and index schema creation.
+ * 列的信息
+ * */
 struct ib_col_t {
 	const char*	name;		/*!< Name of column */
 
@@ -139,7 +156,9 @@ struct ib_col_t {
 
 };
 
-/** InnoDB index columns used during index and index schema creation. */
+/** InnoDB index columns used during index and index schema creation.
+ *
+ * */
 struct ib_key_col_t {
 	const char*	name;		/*!< Name of column */
 

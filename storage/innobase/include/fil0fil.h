@@ -534,13 +534,13 @@ static const ulint FIL_PAGE_COMPRESS_SIZE_V1 = FIL_PAGE_ORIGINAL_SIZE_V1 + 2;
 /* @} */
 
 /** File page types (values of FIL_PAGE_TYPE) @{ */
-#define FIL_PAGE_INDEX		17855	/*!< B-tree node */
-#define FIL_PAGE_RTREE		17854	/*!< B-tree node */
-#define FIL_PAGE_UNDO_LOG	2	/*!< Undo log page */
-#define FIL_PAGE_INODE		3	/*!< Index node */
-#define FIL_PAGE_IBUF_FREE_LIST	4	/*!< Insert buffer free list */
+#define FIL_PAGE_INDEX		17855	/*!< B-tree node   b-tree的节点*/
+#define FIL_PAGE_RTREE		17854	/*!< B-tree node    r-tree的节点*/
+#define FIL_PAGE_UNDO_LOG	2	/*!< Undo log page undolog */
+#define FIL_PAGE_INODE		3	/*!< Index node 页索引 用于管理segment */
+#define FIL_PAGE_IBUF_FREE_LIST	4	/*!< Insert buffer free list 这是insert page的链表 */
 /* File page types introduced in MySQL/InnoDB 5.1.7 */
-#define FIL_PAGE_TYPE_ALLOCATED	0	/*!< Freshly allocated page */
+#define FIL_PAGE_TYPE_ALLOCATED	0	/*!< Freshly allocated page  新增页 ，未落盘的页*/
 #define FIL_PAGE_IBUF_BITMAP	5	/*!< Insert buffer bitmap */
 #define FIL_PAGE_TYPE_SYS	6	/*!< System page */
 #define FIL_PAGE_TYPE_TRX_SYS	7	/*!< Transaction system data */
