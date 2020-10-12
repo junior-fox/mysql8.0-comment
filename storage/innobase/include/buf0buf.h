@@ -313,14 +313,20 @@ public:
 
 private:
 
-	/** Tablespace id. */
+	/** Tablespace id.
+	 * 表空间id
+	 * */
 	ib_uint32_t	m_space;
 
-	/** Page number. */
+	/** Page number.
+	 * 页号
+	 * */
 	ib_uint32_t	m_page_no;
 
 	/** A fold value derived from m_space and m_page_no,
-	used in hashing. */
+	used in hashing.
+	 这个值用户快速定位页在内存中的位置
+	 */
 	mutable ulint	m_fold;
 
 	/* Disable implicit copying. */
@@ -1553,11 +1559,16 @@ public:
 	/** Page size. Protected by buf_pool mutex. */
 	page_size_t	size;
 
-	/** Count of how manyfold this block is currently bufferfixed. */
+	/** Count of how manyfold this block is currently bufferfixed.
+	 * 当一个事务访问该页时 ，这个值自增1 ，当这个页刷脏时该值必须为0且 io_fix 为只读类型
+	 * 以此保证 事务的完整性和多事务并行控制
+	 * */
 	ib_uint32_t	buf_fix_count;
 
 	/** type of pending I/O operation; also protected by
-	buf_pool->mutex for writes only */
+	buf_pool->mutex for writes only
+	 *  这是刷脏的  类型控制
+	 */
 	buf_io_fix	io_fix;
 
 	/** Block state. @see buf_page_in_file */
