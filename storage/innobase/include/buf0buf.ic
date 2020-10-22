@@ -1007,6 +1007,7 @@ buf_block_buf_fix_dec(
 }
 
 /** Returns the buffer pool instance given a page id.
+ * 根据pageid  获取buffer pool instance
 @param[in]	page_id	page id
 @return buffer pool */
 UNIV_INLINE
@@ -1019,7 +1020,7 @@ buf_pool_get(
 
         page_id_t	id(page_id.space(), ignored_page_no);
 
-        ulint		i = id.fold() % srv_buf_pool_instances;
+        ulint		i = id.fold() % srv_buf_pool_instances;   //这里可以见得 page.fold 是一个instance的标志
 
         return(&buf_pool_ptr[i]);
 }
@@ -1112,7 +1113,7 @@ buf_page_hash_get_locked(
 		mode = lock_mode;
 	}
 
-	hash_lock = hash_get_lock(buf_pool->page_hash, page_id.fold());
+	hash_lock = hash_get_lock(buf_pool->page_hash, page_id.fold());  //得到一个hash锁
 
 	ut_ad(!rw_lock_own(hash_lock, RW_LOCK_X)
 	      && !rw_lock_own(hash_lock, RW_LOCK_S));
@@ -1120,7 +1121,9 @@ buf_page_hash_get_locked(
 	if (mode == RW_LOCK_S) {
 		rw_lock_s_lock(hash_lock);
 
-		/* If not own buf_pool_mutex, page_hash can be changed. */
+		/* If not own buf_pool_mutex, page_hash can be changed.
+		 * 如果此时instance锁被打开了，则不能提交
+		 * */
 		hash_lock = hash_lock_s_confirm(
 			hash_lock, buf_pool->page_hash, page_id.fold());
 	} else {

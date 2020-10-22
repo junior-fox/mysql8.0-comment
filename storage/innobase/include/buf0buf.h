@@ -1719,13 +1719,17 @@ struct buf_block_t{
 	buf_page_t	page;		/*!< page information; this must
 					be the first field, so that
 					buf_pool->page_hash can point
-					to buf_page_t or buf_block_t */
+					to buf_page_t or buf_block_t
+					放在第一个位置的原因是 可以通过截断长度 来转换 block 和 page ，而避免复杂的操作
+					*/
 	byte*		frame;		/*!< pointer to buffer frame which
 					is of size UNIV_PAGE_SIZE, and
 					aligned to an address divisible by
-					UNIV_PAGE_SIZE */
+					UNIV_PAGE_SIZE
+					这是真正页的起始地址 这里也可以解释为啥前面的 位域都不做合并，因为整个页是按照byte存取的
+					*/
 #ifndef UNIV_HOTBACKUP
-	BPageLock	lock;		/*!< read-write lock of the buffer
+	BPageLock	lock;		/*!< read-write lock of the buffer 对页的读写锁控制
 					frame */
 	UT_LIST_NODE_T(buf_block_t) unzip_LRU;
 					/*!< node of the decompressed LRU list;

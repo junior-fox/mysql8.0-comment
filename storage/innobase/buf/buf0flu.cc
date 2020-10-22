@@ -1140,27 +1140,28 @@ buf_flush_page(
 	buf_flush_t	flush_type,	/*!< in: type of flush */
 	bool		sync)		/*!< in: true if sync IO request */
 {
-	BPageMutex*	block_mutex;
+	BPageMutex*	block_mutex;  //先给这个块给锁起来
 
 	ut_ad(flush_type < BUF_FLUSH_N_TYPES);
 	ut_ad(buf_pool_mutex_own(buf_pool));
 	ut_ad(buf_page_in_file(bpage));
 	ut_ad(!sync || flush_type == BUF_FLUSH_SINGLE_PAGE);
 
-	block_mutex = buf_page_get_mutex(bpage);
+	block_mutex = buf_page_get_mutex(bpage);  //这个所是页锁
 	ut_ad(mutex_own(block_mutex));
 
 	ut_ad(buf_flush_ready_for_flush(bpage, flush_type));
 
 	bool	is_uncompressed;
 
-	is_uncompressed = (buf_page_get_state(bpage) == BUF_BLOCK_FILE_PAGE);
+	is_uncompressed = (buf_page_get_state(bpage) == BUF_BLOCK_FILE_PAGE); //是否压缩
 	ut_ad(is_uncompressed == (block_mutex != &buf_pool->zip_mutex));
 
 	ibool		flush;
 	rw_lock_t*	rw_lock;
 	bool		no_fix_count = bpage->buf_fix_count == 0;
 
+	//这里计算是否可以刷新
 	if (!is_uncompressed) {
 		flush = TRUE;
 		rw_lock = NULL;
@@ -1183,24 +1184,28 @@ buf_flush_page(
 		}
 	}
 
+	/**
+	 * 可以刷新
+	 */
 	if (flush) {
 
 		/* We are committed to flushing by the time we get here */
 
-		buf_page_set_io_fix(bpage, BUF_IO_WRITE);
+		buf_page_set_io_fix(bpage, BUF_IO_WRITE); //将io_fix 置位写完毕
 
-		buf_page_set_flush_type(bpage, flush_type);
+		buf_page_set_flush_type(bpage, flush_type); //设置刷新类型
 
-		if (buf_pool->n_flush[flush_type] == 0) {
+		if (buf_pool->n_flush[flush_type] == 0) {   //当前类型的刷新数量为0
 			os_event_reset(buf_pool->no_flush[flush_type]);
 		}
 
-		++buf_pool->n_flush[flush_type];
+		++buf_pool->n_flush[flush_type]; //刷新页的数量增加1
 
-		mutex_exit(block_mutex);
+		mutex_exit(block_mutex); //释放锁
 
-		buf_pool_mutex_exit(buf_pool);
+		buf_pool_mutex_exit(buf_pool); //释放pool锁
 
+		//刷新压缩页的延迟刷新
 		if (flush_type == BUF_FLUSH_LIST
 		    && is_uncompressed
 		    && !rw_lock_sx_lock_nowait(rw_lock, BUF_IO_WRITE)) {
@@ -1222,7 +1227,7 @@ buf_flush_page(
 		Note: we set flush observer to a page with x-latch, so we can
 		guarantee that notify_flush and notify_remove are called in pair
 		with s-latch on a uncompressed page. */
-		if (bpage->flush_observer != NULL) {
+		if (bpage->flush_observer != NULL) {  // 如果没有被刷新线程规划 ，则加入刷新线程的规划中
 			buf_pool_mutex_enter(buf_pool);
 
 			bpage->flush_observer->notify_flush(buf_pool, bpage);
@@ -1235,7 +1240,7 @@ buf_flush_page(
 		oldest_modification != 0.  Thus, it cannot be relocated in the
 		buffer pool or removed from flush_list or LRU_list. */
 
-		buf_flush_write_block_low(bpage, flush_type, sync);
+		buf_flush_write_block_low(bpage, flush_type, sync); //
 	}
 
 	return(flush);
@@ -1271,6 +1276,8 @@ buf_flush_page_try(
 # endif /* UNIV_DEBUG || UNIV_IBUF_DEBUG */
 
 /** Check the page is in buffer pool and can be flushed.
+ * 这个函数用户检测线程？？？？？？ flu是定时刷新的？
+ * 检测页是不是可以被刷
 @param[in]	page_id		page id
 @param[in]	flush_type	BUF_FLUSH_LRU or BUF_FLUSH_LIST
 @return true if the page can be flushed. */
@@ -1281,13 +1288,13 @@ buf_flush_check_neighbor(
 	buf_flush_t		flush_type)
 {
 	buf_page_t*	bpage;
-	buf_pool_t*	buf_pool = buf_pool_get(page_id);
+	buf_pool_t*	buf_pool = buf_pool_get(page_id);  //这是buffer pool instance
 	bool		ret;
 
 	ut_ad(flush_type == BUF_FLUSH_LRU
 	      || flush_type == BUF_FLUSH_LIST);
 
-	buf_pool_mutex_enter(buf_pool);
+	buf_pool_mutex_enter(buf_pool);   //将buffer锁住
 
 	/* We only want to flush pages from this buffer pool. */
 	bpage = buf_page_hash_get(buf_pool, page_id);
@@ -1304,21 +1311,23 @@ buf_flush_check_neighbor(
 	because the flushed blocks are soon freed */
 
 	ret = false;
+	//如果不在LRU刷新列表中 或者 页是没有变化的页
 	if (flush_type != BUF_FLUSH_LRU || buf_page_is_old(bpage)) {
-		BPageMutex* block_mutex = buf_page_get_mutex(bpage);
+		BPageMutex* block_mutex = buf_page_get_mutex(bpage); //获取页锁
 
-		mutex_enter(block_mutex);
-		if (buf_flush_ready_for_flush(bpage, flush_type)) {
+		mutex_enter(block_mutex); //把块锁起来
+		if (buf_flush_ready_for_flush(bpage, flush_type)) {  //判定当前页可以刷脏
 			ret = true;
 		}
-		mutex_exit(block_mutex);
+		mutex_exit(block_mutex); //释放这数据块锁
 	}
-	buf_pool_mutex_exit(buf_pool);
+	buf_pool_mutex_exit(buf_pool);   //释放instance锁
 
 	return(ret);
 }
 
 /** Flushes to disk all flushable pages within the flush area.
+ * 刷新页到磁盘 如果被刷新的页 不在FLU队尾 ，则必须将队尾的block都刷盘
 @param[in]	page_id		page id
 @param[in]	flush_type	BUF_FLUSH_LRU or BUF_FLUSH_LIST
 @param[in]	n_flushed	number of pages flushed so far in this batch
@@ -1343,7 +1352,9 @@ buf_flush_try_neighbors(
 	if (UT_LIST_GET_LEN(buf_pool->LRU) < BUF_LRU_OLD_MIN_LEN
 	    || srv_flush_neighbors == 0) {
 		/* If there is little space or neighbor flushing is
-		not enabled then just flush the victim. */
+		not enabled then just flush the victim.
+		 LRU的长度不够长，或者配置的刷新队尾配置 关闭 则仅仅刷新当前选中的页面
+		 */
 		low = page_id.page_no();
 		high = page_id.page_no() + 1;
 	} else {
@@ -1353,12 +1364,20 @@ buf_flush_try_neighbors(
 
 		ulint	buf_flush_area;
 
+		/**
+		 * 刷新区域 仅仅指定到 预读区域 和 整个buffer的16分之1 取其小者
+		 */
 		buf_flush_area	= ut_min(
 			BUF_READ_AHEAD_AREA(buf_pool),
 			buf_pool->curr_size / 16);
 
+        /**
+         * 计算刷新页的起始节点
+         */
 		low = (page_id.page_no() / buf_flush_area) * buf_flush_area;
 		high = (page_id.page_no() / buf_flush_area + 1) * buf_flush_area;
+
+
 
 		if (srv_flush_neighbors == 1) {
 			/* adjust 'low' and 'high' to limit
