@@ -6099,7 +6099,7 @@ fil_flush_file_spaces(
 
 	mutex_enter(&fil_system->mutex);
 
-	n_space_ids = UT_LIST_GET_LEN(fil_system->unflushed_spaces);
+	n_space_ids = UT_LIST_GET_LEN(fil_system->unflushed_spaces);  //未刷新且需要刷新的表空间
 	if (n_space_ids == 0) {
 
 		mutex_exit(&fil_system->mutex);
@@ -6121,19 +6121,19 @@ fil_flush_file_spaces(
 
 		if (space->purpose == purpose
 		    && !space->stop_new_ops
-		    && !space->is_being_truncated) {
+		    && !space->is_being_truncated) {  //创建一个需要更新的space id 组
 
 			space_ids[n_space_ids++] = space->id;
 		}
 	}
 
-	mutex_exit(&fil_system->mutex);
+	mutex_exit(&fil_system->mutex);  //更新的时候需要所以整个文件系统
 
 	/* Flush the spaces.  It will not hurt to call fil_flush() on
 	a non-existing space id. */
 	for (ulint i = 0; i < n_space_ids; i++) {
 
-		fil_flush(space_ids[i]);
+		fil_flush(space_ids[i]);   //刷新
 	}
 
 	ut_free(space_ids);

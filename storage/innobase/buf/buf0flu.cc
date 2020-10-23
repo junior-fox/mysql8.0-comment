@@ -620,7 +620,7 @@ buf_flush_ready_for_flush(
 	ut_ad(flush_type < BUF_FLUSH_N_TYPES);
 
 	if (bpage->oldest_modification == 0
-	    || buf_page_get_io_fix(bpage) != BUF_IO_NONE) {
+	    || buf_page_get_io_fix(bpage) != BUF_IO_NONE) {    //不需要刷新
 		return(false);
 	}
 
@@ -1147,7 +1147,7 @@ buf_flush_page(
 	ut_ad(buf_page_in_file(bpage));
 	ut_ad(!sync || flush_type == BUF_FLUSH_SINGLE_PAGE);
 
-	block_mutex = buf_page_get_mutex(bpage);  //这个所是页锁
+	block_mutex = buf_page_get_mutex(bpage);  //锁住当前块
 	ut_ad(mutex_own(block_mutex));
 
 	ut_ad(buf_flush_ready_for_flush(bpage, flush_type));
@@ -1175,8 +1175,8 @@ buf_flush_page(
 		page is not fixed. */
 		flush = FALSE;
 	} else {
-		rw_lock = &reinterpret_cast<buf_block_t*>(bpage)->lock;
-		if (flush_type != BUF_FLUSH_LIST) {
+		rw_lock = &reinterpret_cast<buf_block_t*>(bpage)->lock;  //判断页上是否加锁
+		if (flush_type != BUF_FLUSH_LIST) {  //如果不是FLU刷脏 则需要根据锁是否能等待来决定是否刷新
 			flush = rw_lock_sx_lock_nowait(rw_lock, BUF_IO_WRITE);
 		} else {
 			/* Will SX lock later */
@@ -1373,25 +1373,26 @@ buf_flush_try_neighbors(
 
         /**
          * 计算刷新页的起始节点
+         * 计算的目的在于一次刷新只能刷新固定的长度，而不会收到page_id.page_no的大小的影响
          */
 		low = (page_id.page_no() / buf_flush_area) * buf_flush_area;
 		high = (page_id.page_no() / buf_flush_area + 1) * buf_flush_area;
 
 
-
+        //需要刷新更老的页面
 		if (srv_flush_neighbors == 1) {
 			/* adjust 'low' and 'high' to limit
 			   for contiguous dirty area */
 			if (page_id.page_no() > low) {
 				for (i = page_id.page_no() - 1; i >= low; i--) {
-					if (!buf_flush_check_neighbor(
+					if (!buf_flush_check_neighbor(    //已经找不到比这个页面更old的页面了
 						page_id_t(page_id.space(), i),
 						flush_type)) {
 
 						break;
 					}
 
-					if (i == low) {
+					if (i == low) { //当前区段是边界区了
 						/* Avoid overwrap when low == 0
 						and calling
 						buf_flush_check_neighbor() with
@@ -1416,7 +1417,7 @@ buf_flush_try_neighbors(
 	}
 
 	const ulint	space_size = fil_space_get_size(page_id.space());
-	if (high > space_size) {
+	if (high > space_size) {   //还是界限判定
 		high = space_size;
 	}
 
@@ -1427,7 +1428,7 @@ buf_flush_try_neighbors(
 	for (ulint i = low; i < high; i++) {
 		buf_page_t*	bpage;
 
-		if ((count + n_flushed) >= n_to_flush) {
+		if ((count + n_flushed) >= n_to_flush) { //如果当前更新的数量已经超过要求更新的数量
 
 			/* We have already flushed enough pages and
 			should call it a day. There is, however, one
@@ -1435,7 +1436,7 @@ buf_flush_try_neighbors(
 			are flushing has not been flushed yet then
 			we'll try to flush the victim that we
 			selected originally. */
-			if (i <= page_id.page_no()) {
+			if (i <= page_id.page_no()) { //当前页即可  ，这里保证当前页是必须要更新的
 				i = page_id.page_no();
 			} else {
 				break;
@@ -1446,10 +1447,10 @@ buf_flush_try_neighbors(
 
 		buf_pool = buf_pool_get(cur_page_id);
 
-		buf_pool_mutex_enter(buf_pool);
+		buf_pool_mutex_enter(buf_pool);  //锁住当前内存instance
 
 		/* We only want to flush pages from this buffer pool. */
-		bpage = buf_page_hash_get(buf_pool, cur_page_id);
+		bpage = buf_page_hash_get(buf_pool, cur_page_id);   //获取页的 byte数据
 
 		if (bpage == NULL) {
 
@@ -1468,7 +1469,7 @@ buf_flush_try_neighbors(
 
 			BPageMutex* block_mutex = buf_page_get_mutex(bpage);
 
-			mutex_enter(block_mutex);
+			mutex_enter(block_mutex); //锁住一个块
 
 			if (buf_flush_ready_for_flush(bpage, flush_type)
 			    && (i == page_id.page_no()
@@ -1488,7 +1489,7 @@ buf_flush_try_neighbors(
 
 				continue;
 			} else {
-				mutex_exit(block_mutex);
+				mutex_exit(block_mutex); //释放块
 			}
 		}
 		buf_pool_mutex_exit(buf_pool);
