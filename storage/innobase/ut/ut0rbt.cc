@@ -290,10 +290,10 @@ rbt_tree_insert(
 			parent.result = tree->compare_with_arg(
 				tree->cmp_arg, key, current->value);
 		} else {
-			parent.result = tree->compare(key, current->value);
+			parent.result = tree->compare(key, current->value); //比较节点的大小，如果lsn相同的话 就比较tablespaceno 如果相同再比较page no 都是较小的优先刷盘
 		}
 
-		if (parent.result < 0) {
+		if (parent.result < 0) {      //遵循左小右大的原则
 			current = current->left;
 		} else {
 			current = current->right;
@@ -319,7 +319,9 @@ rbt_balance_tree(
 	const ib_rbt_node_t*	nil = tree->nil;
 	ib_rbt_node_t*		parent = node->parent;
 
-	/* Restore the red-black property. */
+	/* Restore the red-black property.
+	 * 默认是红色
+	 * */
 	node->color = IB_RBT_RED;
 
 	while (node != ROOT(tree) && parent->color == IB_RBT_RED) {
@@ -845,14 +847,15 @@ rbt_insert(
 	/* Create the node that will hold the value data. */
 	node = (ib_rbt_node_t*) ut_malloc_nokey(SIZEOF_NODE(tree));
 
-	memcpy(node->value, value, tree->sizeof_value);
-	node->parent = node->left = node->right = tree->nil;
+	memcpy(node->value, value, tree->sizeof_value);   //拷贝数据
+	node->parent = node->left = node->right = tree->nil;  //初始化节点信息
 
-	/* Insert in the tree in the usual way. */
+	/* Insert in the tree in the usual way
+	 * */
 	rbt_tree_insert(tree, key, node);
 	rbt_balance_tree(tree, node);
 
-	++tree->n_nodes;
+	++tree->n_nodes; //节点增加1
 
 	return(node);
 }

@@ -100,7 +100,9 @@ mysql_pfs_key_t page_cleaner_thread_key;
 /** Event to synchronise with the flushing. */
 os_event_t	buf_flush_event;
 
-/** State for page cleaner array slot */
+/** State for page cleaner array slot
+ * 页面可清理状态
+ * */
 enum page_cleaner_state_t {
 	/** Not requested any yet.
 	Moved from FINISHED by the coordinator. */
@@ -268,7 +270,10 @@ buf_flush_validate_skip(
 Insert a block in the flush_rbt and returns a pointer to its
 predecessor or NULL if no predecessor. The ordering is maintained
 on the basis of the <oldest_modification, space, offset> key.
-@return pointer to the predecessor or NULL if no predecessor. */
+@return pointer to the predecessor or NULL if no predecessor.
+ *FLU入队
+ * 这里可以看出FLU是一个红黑树结构，因为FLU是一个典型的写多读少的数据结构
+ */
 static
 buf_page_t*
 buf_flush_insert_in_flush_rbt(
@@ -354,17 +359,24 @@ buf_flush_block_cmp(
 
 	ut_ad(b1->in_flush_list);
 	ut_ad(b2->in_flush_list);
-
+    /**
+     * 不同的事务 事务号小的（先启动的事务）优先刷盘
+     */
 	if (b2->oldest_modification > b1->oldest_modification) {
 		return(1);
 	} else if (b2->oldest_modification < b1->oldest_modification) {
 		return(-1);
 	}
 
-	/* If oldest_modification is same then decide on the space. */
+	/* If oldest_modification is same then decide on the space.
+	 * 这里有可能是同一个事务的两个页
+	 * 表空间号小的优先刷盘 （这里是毫无道理啊）
+	 * */
 	ret = (int)(b2->id.space() - b1->id.space());
 
-	/* Or else decide ordering on the page number. */
+	/* Or else decide ordering on the page number.
+	 * 还有可能是同一个表的不同页面 页号小的更早的刷盘（也毫无道理啊）
+	 * */
 	return(ret ? ret : (int) (b2->id.page_no() - b1->id.page_no()));
 }
 
