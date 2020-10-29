@@ -324,8 +324,8 @@ rbt_balance_tree(
 	 * */
 	node->color = IB_RBT_RED;
 
-	while (node != ROOT(tree) && parent->color == IB_RBT_RED) {
-		ib_rbt_node_t*	grand_parent = parent->parent;
+	while (node != ROOT(tree) && parent->color == IB_RBT_RED) {  //新节点不是根节点 且父节点的颜色也不是红色
+		ib_rbt_node_t*	grand_parent = parent->parent;           //
 
 		if (parent == grand_parent->left) {
 			ib_rbt_node_t*	uncle = grand_parent->right;

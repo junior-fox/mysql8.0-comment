@@ -305,7 +305,10 @@ buf_flush_insert_in_flush_rbt(
 }
 
 /*********************************************************//**
-Delete a bpage from the flush_rbt. */
+Delete a bpage from the flush_rbt.
+ 从红黑树中删除这个页
+ 正常情况是 该页已经被刷新到磁盘
+ */
 static
 void
 buf_flush_delete_from_flush_rbt(
@@ -383,7 +386,9 @@ buf_flush_block_cmp(
 /********************************************************************//**
 Initialize the red-black tree to speed up insertions into the flush_list
 during recovery process. Should be called at the start of recovery
-process before any page has been read/written. */
+process before any page has been read/written.
+ 为每个instance 分配FLU 队列
+ */
 void
 buf_flush_init_flush_rbt(void)
 /*==========================*/
@@ -408,7 +413,9 @@ buf_flush_init_flush_rbt(void)
 }
 
 /********************************************************************//**
-Frees up the red-black tree. */
+Frees up the red-black tree.
+ 释放红黑树
+ */
 void
 buf_flush_free_flush_rbt(void)
 /*==========================*/
@@ -434,7 +441,9 @@ buf_flush_free_flush_rbt(void)
 }
 
 /********************************************************************//**
-Inserts a modified block into the flush list. */
+Inserts a modified block into the flush list.
+将一个页存入FLU队列
+ */
 void
 buf_flush_insert_into_flush_list(
 /*=============================*/
@@ -446,7 +455,7 @@ buf_flush_insert_into_flush_list(
 	ut_ad(log_flush_order_mutex_own());
 	ut_ad(buf_page_mutex_own(block));
 
-	buf_flush_list_mutex_enter(buf_pool);
+	buf_flush_list_mutex_enter(buf_pool); //这个地方的锁似乎无有必要？？
 
 	ut_ad((UT_LIST_GET_FIRST(buf_pool->flush_list) == NULL)
 	      || (UT_LIST_GET_FIRST(buf_pool->flush_list)->oldest_modification
@@ -455,7 +464,7 @@ buf_flush_insert_into_flush_list(
 	/* If we are in the recovery then we need to update the flush
 	red-black tree as well. */
 	if (buf_pool->flush_rbt != NULL) {
-		buf_flush_list_mutex_exit(buf_pool);
+		buf_flush_list_mutex_exit(buf_pool); //这个地方的锁似乎无有必要？？
 		buf_flush_insert_sorted_into_flush_list(buf_pool, block, lsn);
 		return;
 	}
@@ -466,9 +475,9 @@ buf_flush_insert_into_flush_list(
 	ut_d(block->page.in_flush_list = TRUE);
 	block->page.oldest_modification = lsn;
 
-	UT_LIST_ADD_FIRST(buf_pool->flush_list, &block->page);
+	UT_LIST_ADD_FIRST(buf_pool->flush_list, &block->page); //把这个页放到  pool中的第一个
 
-	incr_flush_list_size_in_bytes(block, buf_pool);
+	incr_flush_list_size_in_bytes(block, buf_pool); //增加FLU的大小
 
 #ifdef UNIV_DEBUG_VALGRIND
 	void*	p;
@@ -492,7 +501,9 @@ buf_flush_insert_into_flush_list(
 /********************************************************************//**
 Inserts a modified block into the flush list in the right sorted position.
 This function is used by recovery, because there the modifications do not
-necessarily come in the order of lsn's. */
+necessarily come in the order of lsn's.
+ 把页加入 flu队列（插入合适的位置）
+ */
 void
 buf_flush_insert_sorted_into_flush_list(
 /*====================================*/
@@ -528,7 +539,7 @@ buf_flush_insert_sorted_into_flush_list(
 
 	ut_ad(!block->page.in_flush_list);
 	ut_d(block->page.in_flush_list = TRUE);
-	block->page.oldest_modification = lsn;
+	block->page.oldest_modification = lsn;  //标记页面的最早的lsn
 
 #ifdef UNIV_DEBUG_VALGRIND
 	void*	p;
@@ -552,13 +563,13 @@ buf_flush_insert_sorted_into_flush_list(
 	linear search in the else block. */
 	if (buf_pool->flush_rbt != NULL) {
 
-		prev_b = buf_flush_insert_in_flush_rbt(&block->page);
+		prev_b = buf_flush_insert_in_flush_rbt(&block->page); //加入FLU队列
 
 	} else {
 
-		b = UT_LIST_GET_FIRST(buf_pool->flush_list);
+		b = UT_LIST_GET_FIRST(buf_pool->flush_list); //获取最旧的FLU页
 
-		while (b != NULL && b->oldest_modification
+		while (b != NULL && b->oldest_modification       //从最新的页开始找 找到比当前页更旧的页
 		       > block->page.oldest_modification) {
 
 			ut_ad(b->in_flush_list);
@@ -568,12 +579,12 @@ buf_flush_insert_sorted_into_flush_list(
 	}
 
 	if (prev_b == NULL) {
-		UT_LIST_ADD_FIRST(buf_pool->flush_list, &block->page);
+		UT_LIST_ADD_FIRST(buf_pool->flush_list, &block->page); //没有比他更早进入的页了
 	} else {
-		UT_LIST_INSERT_AFTER(buf_pool->flush_list, prev_b, &block->page);
+		UT_LIST_INSERT_AFTER(buf_pool->flush_list, prev_b, &block->page); //把页放在他的后面一点
 	}
 
-	incr_flush_list_size_in_bytes(block, buf_pool);
+	incr_flush_list_size_in_bytes(block, buf_pool); //调整flu的大小
 
 #if defined UNIV_DEBUG || defined UNIV_BUF_DEBUG
 	ut_a(buf_flush_validate_low(buf_pool));
@@ -585,7 +596,9 @@ buf_flush_insert_sorted_into_flush_list(
 /********************************************************************//**
 Returns TRUE if the file page block is immediately suitable for replacement,
 i.e., the transition FILE_PAGE => NOT_USED allowed.
-@return TRUE if can replace immediately */
+@return TRUE if can replace immediately
+ LRU的替换 检测
+ */
 ibool
 buf_flush_ready_for_replace(
 /*========================*/
@@ -599,7 +612,7 @@ buf_flush_ready_for_replace(
 	ut_ad(mutex_own(buf_page_get_mutex(bpage)));
 	ut_ad(bpage->in_LRU_list);
 
-	if (buf_page_in_file(bpage)) {
+	if (buf_page_in_file(bpage)) {  //是否是压缩页？？？？？？ 为啥取这个名字？？？？
 
 		return(bpage->oldest_modification == 0
 		       && bpage->buf_fix_count == 0
@@ -614,7 +627,9 @@ buf_flush_ready_for_replace(
 
 /********************************************************************//**
 Returns true if the block is modified and ready for flushing.
-@return true if can flush immediately */
+@return true if can flush immediately
+ FLU刷新检测
+ */
 bool
 buf_flush_ready_for_flush(
 /*======================*/
@@ -653,7 +668,9 @@ buf_flush_ready_for_flush(
 }
 
 /********************************************************************//**
-Remove a block from the flush list of modified blocks. */
+Remove a block from the flush list of modified blocks.
+ 清除FLU中已经被刷盘的页
+ */
 void
 buf_flush_remove(
 /*=============*/
@@ -702,7 +719,7 @@ buf_flush_remove(
 	because we assert on in_flush_list in comparison function. */
 	ut_d(bpage->in_flush_list = FALSE);
 
-	buf_pool->stat.flush_list_bytes -= bpage->size.physical();
+	buf_pool->stat.flush_list_bytes -= bpage->size.physical();//重申一下，flu的大小取的是物理页的大小。
 
 	bpage->oldest_modification = 0;
 
@@ -829,7 +846,9 @@ buf_flush_write_complete(
 the page.
 @param[in,out]	page	page to update
 @param[in]	size	compressed page size
-@param[in]	lsn	LSN to stamp on the page */
+@param[in]	lsn	LSN to stamp on the page
+ 校验数据并更新页内容
+ */
 void
 buf_flush_update_zip_checksum(
 	buf_frame_t*	page,
@@ -842,8 +861,8 @@ buf_flush_update_zip_checksum(
 		page, size,
 		static_cast<srv_checksum_algorithm_t>(srv_checksum_algorithm));
 
-	mach_write_to_8(page + FIL_PAGE_LSN, lsn);
-	mach_write_to_4(page + FIL_PAGE_SPACE_OR_CHKSUM, checksum);
+	mach_write_to_8(page + FIL_PAGE_LSN, lsn);  //写入LSN
+	mach_write_to_4(page + FIL_PAGE_SPACE_OR_CHKSUM, checksum); //写入校验值
 }
 
 /** Initialize a page for writing to the tablespace.
