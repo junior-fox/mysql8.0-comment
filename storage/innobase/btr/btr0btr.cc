@@ -162,7 +162,9 @@ btr_root_fseg_validate(
 
 /**************************************************************//**
 Gets the root node of a tree and x- or s-latches it.
-@return root page, x- or s-latched */
+@return root page, x- or s-latched
+ 获取tree的根节点所在页
+ */
 buf_block_t*
 btr_root_block_get(
 /*===============*/
@@ -171,9 +173,9 @@ btr_root_block_get(
 					or RW_X_LATCH */
 	mtr_t*			mtr)	/*!< in: mtr */
 {
-	const ulint		space = dict_index_get_space(index);
-	const page_id_t		page_id(space, dict_index_get_page(index));
-	const page_size_t	page_size(dict_table_page_size(index->table));
+	const ulint		space = dict_index_get_space(index); //获取索引所在的表空间
+	const page_id_t		page_id(space, dict_index_get_page(index));  // 获取所以页所在的位置
+	const page_size_t	page_size(dict_table_page_size(index->table));  //获取页大小
 
 	buf_block_t*	block = btr_block_get(page_id, page_size, mode,
 					      index, mtr);
@@ -195,7 +197,9 @@ btr_root_block_get(
 
 /**************************************************************//**
 Gets the root node of a tree and sx-latches it for segment access.
-@return root page, sx-latched */
+@return root page, sx-latched
+ 获取树的根节点
+ */
 page_t*
 btr_root_get(
 /*=========*/
@@ -213,7 +217,9 @@ btr_root_get(
 Gets the height of the B-tree (the level of the root, when the leaf
 level is assumed to be 0). The caller must hold an S or X latch on
 the index.
-@return tree height (level of the root) */
+@return tree height (level of the root)
+ 获取树高
+ */
 ulint
 btr_height_get(
 /*===========*/
@@ -246,7 +252,9 @@ btr_height_get(
 /**************************************************************//**
 Checks a file segment header within a B-tree root page and updates
 the segment header space id.
-@return TRUE if valid */
+@return TRUE if valid
+
+ */
 static
 bool
 btr_root_fseg_adjust_on_import(
@@ -475,7 +483,9 @@ that the caller has made the reservation for free extents!
 @retval NULL if no page could be allocated
 @retval block, rw_lock_x_lock_count(&block->lock) == 1 if allocation succeeded
 (init_mtr == mtr, or the page was not previously freed in mtr)
-@retval block (not allocated or initialized) otherwise */
+@retval block (not allocated or initialized) otherwise
+ 给b-tree分配一个新页
+ */
 buf_block_t*
 btr_page_alloc(
 /*===========*/
@@ -510,7 +520,9 @@ btr_page_alloc(
 
 /**************************************************************//**
 Gets the number of pages in a B-tree.
-@return number of pages, or ULINT_UNDEFINED if the index is unavailable */
+@return number of pages, or ULINT_UNDEFINED if the index is unavailable
+ 获取b=tree的大小
+ */
 ulint
 btr_get_size(
 /*=========*/
@@ -657,7 +669,9 @@ btr_page_free(
 }
 
 /**************************************************************//**
-Sets the child node file address in a node pointer. */
+Sets the child node file address in a node pointer.
+ 设置子节点的位置
+ */
 UNIV_INLINE
 void
 btr_node_ptr_set_child_page_no(

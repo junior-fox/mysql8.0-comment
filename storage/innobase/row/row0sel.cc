@@ -388,7 +388,9 @@ sel_node_free_private(
 
 /*********************************************************************//**
 Evaluates the values in a select list. If there are aggregate functions,
-their argument value is added to the aggregate total. */
+their argument value is added to the aggregate total.
+ 评估查询 其实就是
+ */
 UNIV_INLINE
 void
 sel_eval_select_list(

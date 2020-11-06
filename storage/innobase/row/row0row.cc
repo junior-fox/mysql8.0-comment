@@ -1075,11 +1075,11 @@ row_search_index_entry(
 
 	ut_ad(dtuple_check_typed(entry));
 
-	if (dict_index_is_spatial(index)) {
+	if (dict_index_is_spatial(index)) {   //空间索引
 		ut_ad(mode & BTR_MODIFY_LEAF || mode & BTR_MODIFY_TREE);
 		rtr_pcur_open(index, entry, PAGE_CUR_RTREE_LOCATE,
 			      mode, pcur, mtr);
-	} else {
+	} else {   //btree 索引
 		btr_pcur_open(index, entry, PAGE_CUR_LE, mode, pcur, mtr);
 	}
 
@@ -1105,7 +1105,7 @@ row_search_index_entry(
 
 	n_fields = dtuple_get_n_fields(entry);
 
-	if (page_rec_is_infimum(rec)) {
+	if (page_rec_is_infimum(rec)) { //下确界  这里可以看得出来innodb的扫描是从大往下扫描
 
 		return(ROW_NOT_FOUND);
 	} else if (low_match != n_fields) {

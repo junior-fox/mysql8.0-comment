@@ -246,7 +246,9 @@ trx_is_noredo_rseg_updated(
 }
 
 /********************************************************************//**
-Check if redo/noredo rseg is modified for insert/update. */
+Check if redo/noredo rseg is modified for insert/update.
+检查redolog 是否有更新
+ */
 UNIV_INLINE
 bool
 trx_is_rseg_updated(

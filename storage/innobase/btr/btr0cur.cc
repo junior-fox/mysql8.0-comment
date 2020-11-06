@@ -50,6 +50,15 @@ by crashing the database and doing a roll-forward.
 Created 10/16/1994 Heikki Tuuri
 *******************************************************/
 
+
+/***
+ *
+ *
+ *  btree的游标再在此
+ *
+ */
+
+
 #include "btr0cur.h"
 
 #ifdef UNIV_NONINL
