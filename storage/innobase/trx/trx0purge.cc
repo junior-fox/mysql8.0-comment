@@ -543,12 +543,12 @@ trx_purge_truncate_rseg_history(
 	trx_usegf_t*	seg_hdr;
 	mtr_t		mtr;
 	trx_id_t	undo_trx_no;
-	const bool	noredo		= trx_sys_is_noredo_rseg_slot(
+	const bool	noredo		= trx_sys_is_noredo_rseg_slot( //undo log 的写入是不记redo log的  要求1024个slot 中0~32个是undo log自己的 回滚段
 		rseg->id);
 
 	mtr_start(&mtr);
 	if (noredo) {
-		mtr.set_log_mode(MTR_LOG_NO_REDO);
+		mtr.set_log_mode(MTR_LOG_NO_REDO);  //当前事务不记录redo  不需要保持持久性，清理失败了对数据没有任何影响
 	}
 	mutex_enter(&(rseg->mutex));
 
@@ -1747,7 +1747,10 @@ trx_purge_dml_delay(void)
 
 	/* If purge lag is set (ie. > 0) then calculate the new DML delay.
 	Note: we do a dirty read of the trx_sys_t data structure here,
-	without holding trx_sys->mutex. */
+	without holding trx_sys->mutex.
+    如果有设置延迟清理 ， 且清理链表的长度超过线程一次的清理能力，就开始清理
+    清理的规则一次清理能力的50%  ，为啥要这样设计？？？？  保证一次不能清理太多，清理太多的话 IO可能扛不住
+	 */
 
 	if (srv_max_purge_lag > 0
 	    && trx_sys->rseg_history_len
@@ -1764,7 +1767,7 @@ trx_purge_dml_delay(void)
 			delay = (ulint) ((ratio - .5) * 10000);
 		}
 
-		if (delay > srv_max_purge_lag_delay) {
+		if (delay > srv_max_purge_lag_delay) {    //如果延迟超过了最大的阀值， 那么就不做延迟设计了 。
 			delay = srv_max_purge_lag_delay;
 		}
 
@@ -1836,7 +1839,7 @@ trx_purge(
 
 	ut_a(n_purge_threads > 0);
 
-	srv_dml_needed_delay = trx_purge_dml_delay();
+	srv_dml_needed_delay = trx_purge_dml_delay();   //计算清理延迟
 
 	/* The number of tasks submitted should be completed. */
 	ut_a(purge_sys->n_submitted == purge_sys->n_completed);
@@ -1845,7 +1848,7 @@ trx_purge(
 
 	purge_sys->view_active = false;
 
-	trx_sys->mvcc->clone_oldest_view(&purge_sys->view);
+	trx_sys->mvcc->clone_oldest_view(&purge_sys->view); //克隆一个 view active
 
 	purge_sys->view_active = true;
 
@@ -1862,7 +1865,7 @@ trx_purge(
 		n_purge_threads, purge_sys, batch_size);
 
 	/* Do we do an asynchronous purge or not ? */
-	if (n_purge_threads > 1) {
+	if (n_purge_threads > 1) {              //多个线程清理的话
 		ulint	i = 0;
 
 		/* Submit the tasks to the work queue. */
@@ -1875,7 +1878,7 @@ trx_purge(
 			srv_que_task_enqueue_low(thr);
 		}
 
-		thr = que_fork_scheduler_round_robin(purge_sys->query, thr);
+		thr = que_fork_scheduler_round_robin(purge_sys->query, thr);  //调度 多个清理线程 开始清理
 		ut_a(thr != NULL);
 
 		purge_sys->n_submitted += n_purge_threads - 1;
@@ -1887,7 +1890,7 @@ trx_purge(
 		thr = que_fork_scheduler_round_robin(purge_sys->query, NULL);
 		ut_ad(thr);
 
-run_synchronously:
+run_synchronously:        //正式开始清理数据
 		++purge_sys->n_submitted;
 
 		que_run_threads(thr);
@@ -1896,7 +1899,7 @@ run_synchronously:
 			&purge_sys->pq_mutex, &purge_sys->n_completed, 1);
 
 		if (n_purge_threads > 1) {
-			trx_purge_wait_for_workers_to_complete(purge_sys);
+			trx_purge_wait_for_workers_to_complete(purge_sys);  //等到清理完成
 		}
 	}
 

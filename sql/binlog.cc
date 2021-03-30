@@ -8597,9 +8597,9 @@ int MYSQL_BIN_LOG::prepare(THD *thd, bool all)
     commit flush stage. Reset to HA_REGULAR_DURABILITY at the
     beginning of parsing next command.
   */
-  thd->durability_property= HA_IGNORE_DURABILITY;
+  thd->durability_property= HA_IGNORE_DURABILITY;  //持久性
 
-  int error= ha_prepare_low(thd, all);
+  int error= ha_prepare_low(thd, all);  //这里通过handler 先把物理日志提交成 prepare状态
 
   DBUG_RETURN(error);
 }

@@ -504,11 +504,11 @@ bool lex_start(THD *thd)
 {
   DBUG_ENTER("lex_start");
 
-  LEX *lex= thd->lex;
+  LEX *lex= thd->lex;  //为线程设置分词器
 
   lex->thd= thd;
   lex->reset();
-  // Initialize the cost model to be used for this query
+  // Initialize the cost model to be used for this query  初始化 成本计算器  用于后面对sql 查询成本的计算预估
   thd->init_cost_model();
 
   const bool status= lex->new_top_level_query();

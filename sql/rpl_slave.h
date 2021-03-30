@@ -50,7 +50,7 @@ typedef enum { SLAVE_THD_IO, SLAVE_THD_SQL, SLAVE_THD_WORKER } SLAVE_THD_TYPE;
 #endif
 
 /**
-  @defgroup Replication Replication
+  @def group Replication Replication
   @{
 
   @file

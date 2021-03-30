@@ -3229,7 +3229,7 @@ static bool setup_join_buffering(JOIN_TAB *tab, JOIN *join, uint no_jbuf_after)
   case JT_INDEX_SCAN:
   case JT_RANGE:
   case JT_INDEX_MERGE:
-    if (!bnl_on)
+    if (!bnl_on)  //如果关闭这个算法
     {
       DBUG_ASSERT(tab->use_join_cache() == JOIN_CACHE::ALG_NONE);
       goto no_join_cache;

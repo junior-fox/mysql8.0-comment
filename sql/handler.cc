@@ -1676,7 +1676,7 @@ int ha_commit_trans(THD *thd, bool all, bool ignore_global_read_lock)
     if binlog is disabled, or binlog is enabled and log_slave_updates
     is disabled with slave SQL thread or slave worker thread.
   */
-  error= commit_owned_gtids(thd, all, &need_clear_owned_gtid);
+  error= commit_owned_gtids(thd, all, &need_clear_owned_gtid); // 生成gtid ，同时会返回是否需要清理gtid
 
   /*
     'all' means that this is either an explicit commit issued by
@@ -1684,7 +1684,7 @@ int ha_commit_trans(THD *thd, bool all, bool ignore_global_read_lock)
   */
   Transaction_ctx *trn_ctx= thd->get_transaction();
   Transaction_ctx::enum_trx_scope trx_scope=
-    all ? Transaction_ctx::SESSION : Transaction_ctx::STMT;
+    all ? Transaction_ctx::SESSION : Transaction_ctx::STMT; //事务的范围 是整个事务还是 单个SQL的范围
 
   /*
     "real" is a nick name for a transaction for which a commit will

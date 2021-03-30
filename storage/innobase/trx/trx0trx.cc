@@ -2202,9 +2202,9 @@ trx_commit(
 	DBUG_EXECUTE_IF("ib_trx_commit_crash_before_trx_commit_start",
 			DBUG_SUICIDE(););
 
-	if (trx_is_rseg_updated(trx)) {
+	if (trx_is_rseg_updated(trx)) {   //标记回滚段的更新
 		mtr = &local_mtr;
-		mtr_start_sync(mtr);
+		mtr_start_sync(mtr);      //当前事务开始
 	} else {
 
 		mtr = NULL;
@@ -2426,7 +2426,7 @@ trx_commit_for_mysql(
 		trx->op_info = "committing";
 
 		if (trx->id != 0) {
-			trx_update_mod_tables_timestamp(trx);
+			trx_update_mod_tables_timestamp(trx);  //更新表的最后更新更新时间，且清理事务中所有表的modify状态
 		}
 
 		trx_commit(trx);
