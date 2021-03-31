@@ -570,7 +570,9 @@ row_sel_fetch_columns(
 }
 
 /*********************************************************************//**
-Allocates a prefetch buffer for a column when prefetch is first time done. */
+Allocates a prefetch buffer for a column when prefetch is first time done.
+ 分配预读 空间
+ */
 static
 void
 sel_col_prefetch_buf_alloc(
@@ -4254,6 +4256,7 @@ row_search_end_range_check(
 }
 
 /** Traverse to next/previous record.
+ * 遍历行 这里其实只是移动了游标
 @param[in]	moves_up	if true, move to next record else previous
 @param[in]	match_mode	0 or ROW_SEL_EXACT or ROW_SEL_EXACT_PREFIX
 @param[in,out]	pcur		cursor to record
@@ -4263,8 +4266,8 @@ row_search_end_range_check(
 static
 dberr_t
 row_search_traverse(
-	bool		moves_up,
-	ulint		match_mode,
+	bool		moves_up,   //指定查找是从上往下 还是从下往上
+	ulint		match_mode,  //匹配模式
 	btr_pcur_t*	pcur,
 	mtr_t*		mtr)
 {

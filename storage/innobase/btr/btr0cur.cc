@@ -93,8 +93,8 @@ enum btr_op_t {
 	BTR_NO_OP = 0,			/*!< Not buffered */
 	BTR_INSERT_OP,			/*!< Insert, do not ignore UNIQUE */
 	BTR_INSERT_IGNORE_UNIQUE_OP,	/*!< Insert, ignoring UNIQUE */
-	BTR_DELETE_OP,			/*!< Purge a delete-marked record */
-	BTR_DELMARK_OP			/*!< Mark a record for deletion */
+	BTR_DELETE_OP,			/*!< Purge a delete-marked record  真实的删除数据节点*/
+	BTR_DELMARK_OP			/*!< Mark a record for deletion  标记删除数据节点*/
 };
 
 /** Modification types for the B-tree operation. */

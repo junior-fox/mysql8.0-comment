@@ -358,19 +358,19 @@ btr_pcur_move_to_next(
 
 	cursor->old_stored = false;
 
-	if (btr_pcur_is_after_last_on_page(cursor)) {
+	if (btr_pcur_is_after_last_on_page(cursor)) {  //如果游标是本页的最后一条数据了
 
-		if (btr_pcur_is_after_last_in_tree(cursor, mtr)) {
+		if (btr_pcur_is_after_last_in_tree(cursor, mtr)) {  //如果游标是这个颗树上的最后一条数据了
 
 			return(FALSE);
 		}
 
-		btr_pcur_move_to_next_page(cursor, mtr);
+		btr_pcur_move_to_next_page(cursor, mtr); //移动到下一页 找数据
 
 		return(TRUE);
 	}
 
-	btr_pcur_move_to_next_on_page(cursor);
+	btr_pcur_move_to_next_on_page(cursor); //在本页内移动到下一条找数据
 
 	return(TRUE);
 }
