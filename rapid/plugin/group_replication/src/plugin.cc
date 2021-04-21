@@ -390,7 +390,7 @@ int plugin_group_replication_start()
       check_recovery_ssl_string(recovery_ssl_crlpath_var,
                                 "ssl_crlpath_pointer"))
     DBUG_RETURN(GROUP_REPLICATION_CONFIGURATION_ERROR);
-  if (!start_group_replication_at_boot_var &&
+  if (!start_group_replication_at_boot_var &&   //不是第一个启动的 且没有初始化
       !server_engine_initialized())
   {
     log_message(MY_ERROR_LEVEL,
@@ -400,7 +400,7 @@ int plugin_group_replication_start()
                 "with server_id larger than 0.");
     DBUG_RETURN(GROUP_REPLICATION_CONFIGURATION_ERROR);
   }
-  if (force_members_var != NULL &&
+  if (force_members_var != NULL &&  //启动的时候 其强制成员必须为空 因为此时处于分裂状态，如果有强制成员将会启动失败
       strlen(force_members_var) > 0)
   {
     log_message(MY_ERROR_LEVEL,
@@ -412,7 +412,7 @@ int plugin_group_replication_start()
   if (init_group_sidno())
     DBUG_RETURN(GROUP_REPLICATION_CONFIGURATION_ERROR); /* purecov: inspected */
 
-  if (allow_local_disjoint_gtids_join_var)
+  if (allow_local_disjoint_gtids_join_var)  //允许本地加入集群
   {
     option_deprecation_warning(current_thd,
                                "group_replication_allow_local_disjoint_gtids_join");
@@ -446,7 +446,7 @@ int plugin_group_replication_start()
   }
 
   DBUG_RETURN(initialize_plugin_and_join(PSESSION_DEDICATED_THREAD,
-                                         NULL));
+                                         NULL));   //加入集群
 }
 
 int initialize_plugin_and_join(enum_plugin_con_isolation sql_api_isolation,
@@ -1076,7 +1076,7 @@ int plugin_group_replication_init(MYSQL_PLUGIN plugin_info)
   init_compatibility_manager();
 
   plugin_is_auto_starting= start_group_replication_at_boot_var;
-  if (start_group_replication_at_boot_var && plugin_group_replication_start())
+  if (start_group_replication_at_boot_var && plugin_group_replication_start())  //加载的时候如果设置了 bootstrap  ，那么直接启动
   {
     log_message(MY_ERROR_LEVEL,
                 "Unable to start Group Replication on boot");

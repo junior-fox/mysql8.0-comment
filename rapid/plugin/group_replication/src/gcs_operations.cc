@@ -357,6 +357,7 @@ Gcs_operations::send_message(const Plugin_gcs_message& message,
     Ensure that group communication interfaces are initialized
     and ready to use, since plugin can leave the group on errors
     but continue to be active.
+    其实就是xcom 通讯类 gcs_interface 全局通讯 global communication session
   */
   if (gcs_interface == NULL || !gcs_interface->is_initialized())
   {

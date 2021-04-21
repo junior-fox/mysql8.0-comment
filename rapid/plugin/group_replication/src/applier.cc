@@ -427,13 +427,14 @@ Applier_module::applier_thread_handle()
   applier_error+= pipeline->handle_action(thd_conf_action);
   delete thd_conf_action;
 
-  //applier main loop
+  //applier main loop   applier的主循环 这里
   while (!applier_error && !packet_application_error && !loop_termination)
   {
     if (is_applier_thread_aborted())
       break;
 
-    this->incoming->front(&packet); // blocking
+    this->incoming->front(&packet); // blocking  front里面有个pthread_cond_wait 如果线程被接收到的消息唤醒了，那么就开始处理 同时在这里或把消息取过来   。
+    // 所以这里一定是会获取到消息的
 
     switch (packet->get_packet_type())
     {

@@ -29,7 +29,7 @@ const unsigned int Plugin_gcs_message::WIRE_HD_LEN_SIZE= 2;
 const unsigned int Plugin_gcs_message::WIRE_MSG_LEN_SIZE= 8;
 const unsigned int Plugin_gcs_message::WIRE_CARGO_TYPE_SIZE= 2;
 
-const unsigned int Plugin_gcs_message::WIRE_FIXED_HEADER_SIZE=
+const unsigned int Plugin_gcs_message::WIRE_FIXED_HEADER_SIZE=  //16 = 4+2+8+2
     Plugin_gcs_message::WIRE_VERSION_SIZE +
     Plugin_gcs_message::WIRE_HD_LEN_SIZE +
     Plugin_gcs_message::WIRE_MSG_LEN_SIZE +
@@ -54,7 +54,7 @@ Plugin_gcs_message::Plugin_gcs_message(enum_cargo_type cargo_type)
 void Plugin_gcs_message::encode(std::vector<unsigned char>* buffer) const
 {
   DBUG_ENTER("Plugin_gcs_message::encode");
-  unsigned char buf[WIRE_FIXED_HEADER_SIZE];
+  unsigned char buf[WIRE_FIXED_HEADER_SIZE]; // buf[16]
   unsigned char* slider= buf;
 
   int4store(slider, m_version);
