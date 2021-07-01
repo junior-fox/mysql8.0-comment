@@ -828,7 +828,7 @@ mach_read_int_type(
 	uintmax_t	ret;
 	uint		i;
 
-	if (unsigned_type || (src[0] & 0x80)) {
+	if (unsigned_type || (src[0] & 0x80)) {//正数 的时候
 
 		ret = 0x0000000000000000ULL;
 	} else {

@@ -203,7 +203,7 @@ row_undo_mod_remove_clust_low(
 		const ulint*	offsets;
 		ulint		len;
 
-		trx_id_col = dict_index_get_sys_col_pos(
+		trx_id_col = dict_index_get_c_pos(
 			btr_cur_get_index(btr_cur), DATA_TRX_ID);
 		ut_ad(trx_id_col > 0);
 		ut_ad(trx_id_col != ULINT_UNDEFINED);

@@ -1143,7 +1143,7 @@ row_raw_format_int(
 {
 	ulint	ret;
 
-	if (data_len <= sizeof(ib_uint64_t)) {
+	if (data_len <= sizeof(ib_uint64_t)) {  //数字都小于8字节 超出的部分直接转换成16进制
 
 		ib_uint64_t	value;
 		ibool		unsigned_type = prtype & DATA_UNSIGNED;

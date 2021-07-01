@@ -16816,7 +16816,7 @@ ha_innobase::get_auto_increment(
 
 	*nb_reserved_values = trx->n_autoinc_rows;
 
-	/* With old style AUTOINC locking we only update the table's
+	/* With old style AUTOINC locking we    only update the table's
 	AUTOINC counter after attempting to insert the row. */
 	if (innobase_autoinc_lock_mode != AUTOINC_OLD_STYLE_LOCKING) {
 		ulonglong	current;

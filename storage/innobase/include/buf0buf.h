@@ -1,3 +1,4 @@
+
 /*****************************************************************************
 
 Copyright (c) 1995, 2019, Oracle and/or its affiliates. All Rights Reserved.
@@ -1553,15 +1554,20 @@ public:
 	by buf_pool->mutex. */
 	/* @{ */
 
-	/** Page id. Protected by buf_pool mutex. */
+	/** Page id. Protected by buf_pool mutex.
+	 * 16个字节
+	 * */
 	page_id_t	id;
 
-	/** Page size. Protected by buf_pool mutex. */
+	/** Page size. Protected by buf_pool mutex.
+	 * 35个bit位 其中 前17个位表示 物理页大小  中间17位表示 逻辑页大小  最后一位表示 是否压缩
+	 * */
 	page_size_t	size;
 
-	/** Count of how manyfold this block is currently bufferfixed.
+	/** Count of how many fold this block is currently buffer fixed.
 	 * 当一个事务访问该页时 ，这个值自增1 ，当这个页刷脏时该值必须为0且 io_fix 为只读类型
 	 * 以此保证 事务的完整性和多事务并行控制
+	 * todo ：当前mysql采用的steal模式  所以这里可能已经废弃了
 	 * */
 	ib_uint32_t	buf_fix_count;
 
@@ -1716,7 +1722,7 @@ struct buf_block_t{
 	/** @name General fields */
 	/* @{ */
 
-	buf_page_t	page;		/*!< page information; this must
+    buf_page_t	page;		/*!< page information; this must
 					be the first field, so that
 					buf_pool->page_hash can point
 					to buf_page_t or buf_block_t

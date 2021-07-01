@@ -497,24 +497,24 @@ row_mysql_store_col_in_innobase_format(
 		sign bit negated if the data is a signed integer. In MySQL,
 		integers are stored in a little-endian format. */
 
-		byte*	p = buf + col_len;
+		byte*	p = buf + col_len; //先取数据长度的字节数出来
 
-		for (;;) {
-			p--;
-			*p = *mysql_data;
-			if (p == buf) {
+		for (;;) {  //按字节处理数据 比按位处理效率更高
+			p--;          //从尾端开始处理数据 尾端是数字的最大的值
+			*p = *mysql_data; //mysql_data 是正序的存储的数据 是大端
+			if (p == buf) { //倒叙的处理数据 这是小端的存储格式
 				break;
 			}
-			mysql_data++;
+			mysql_data++; //mysql_data每处理一个字节就丢弃一个字节
 		}
 
 		if (!(dtype->prtype & DATA_UNSIGNED)) {
 
-			*buf ^= 128;
+			*buf ^= 128;       //如果是有符号的 则存的是数据的补码
 		}
 
 		ptr = buf;
-		buf += col_len;
+		buf += col_len; //buf减去了这个多的长度，前面的长度固定了，方便后续的处理
 	} else if ((type == DATA_VARCHAR
 		    || type == DATA_VARMYSQL
 		    || type == DATA_BINARY)) {
