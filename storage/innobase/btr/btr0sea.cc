@@ -36,6 +36,10 @@ this program; if not, write to the Free Software Foundation, Inc.,
 The index tree adaptive search
 
 Created 2/17/1996 Heikki Tuuri
+ 自适应hash索引的实现 代码
+ 自适应hash 首先在内存中（不是buffer_pool）创建两块内存 一个用于table的latch 锁  一个是针对页的 hash table 。这两个区域都被拆分成8（默认值 ，可调整）份。
+ 关于table的那一份，如果table在更新时就能够将表锁切分成8分 ，这样对整个表的影响就会变小
+ 关于 hash table 它相当于8个hash map 把需要快速定位的页都存在里面，等待寻找时就能快速的寻找到数据页
 *************************************************************************/
 
 #include "btr0sea.h"
@@ -68,7 +72,7 @@ ulint		btr_search_n_hash_fail	= 0;
 #endif /* UNIV_SEARCH_PERF_STAT */
 
 /** padding to prevent other memory update
-hotspots from residing on the same memory
+hots pots from residing on the same memory
 cache line as btr_search_latches */
 byte		btr_sea_pad1[64];
 
@@ -77,7 +81,7 @@ byte		btr_sea_pad1[64];
 NOTE: It does not protect values of non-ordering fields within a record from
 being updated in-place! We can use fact (1) to perform unique searches to
 indexes. We will allocate the latches from dynamic memory to get it to the
-same DRAM page as other hotspot semaphores */
+same DRAM page as other hots pot semaphores */
 rw_lock_t**	btr_search_latches;
 
 /** padding to prevent other memory update hotspots from residing on
@@ -193,7 +197,10 @@ btr_search_sys_create(ulint hash_size)
 	/* Step-1: Allocate latches (1 per part). */
 	btr_search_latches = reinterpret_cast<rw_lock_t**>(
 		ut_malloc(sizeof(rw_lock_t*) * btr_ahi_parts, mem_key_ahi));
-
+      /**
+       * btr_ahi_parts == 8
+       * 将latch切分为8个区域
+       */
 	for (ulint i = 0; i < btr_ahi_parts; ++i) {
 
 		btr_search_latches[i] = reinterpret_cast<rw_lock_t*>(
@@ -203,13 +210,17 @@ btr_search_sys_create(ulint hash_size)
 			       btr_search_latches[i], SYNC_SEARCH_SYS);
 	}
 
-	/* Step-2: Allocate hash tablees. */
+	/* Step-2: Allocate hash tables. */
 	btr_search_sys = reinterpret_cast<btr_search_sys_t*>(
 		ut_malloc(sizeof(btr_search_sys_t), mem_key_ahi));
 
 	btr_search_sys->hash_tables = reinterpret_cast<hash_table_t**>(
 		ut_malloc(sizeof(hash_table_t*) * btr_ahi_parts, mem_key_ahi));
 
+        /**
+         * 将hash table 切分为8个块
+         * 这样使得每个块的控制就比较少
+         */
 	for (ulint i = 0; i < btr_ahi_parts; ++i) {
 
 		btr_search_sys->hash_tables[i] =

@@ -816,9 +816,9 @@ log_init(void)
 	log_sys->buf_size = LOG_BUFFER_SIZE;
 
 	log_sys->buf_ptr = static_cast<byte*>(
-		ut_zalloc_nokey(log_sys->buf_size * 2 + OS_FILE_LOG_BLOCK_SIZE));
+		ut_zalloc_nokey(log_sys->buf_size * 2 + OS_FILE_LOG_BLOCK_SIZE)); //申请一块内存
 	log_sys->buf = static_cast<byte*>(
-		ut_align(log_sys->buf_ptr, OS_FILE_LOG_BLOCK_SIZE));
+		ut_align(log_sys->buf_ptr, OS_FILE_LOG_BLOCK_SIZE)); //数据对齐
 
 	log_sys->first_in_use = true;
 

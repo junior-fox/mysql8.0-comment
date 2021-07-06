@@ -1113,7 +1113,11 @@ extern lock_sys_t*	lock_sys;
 /** Test if lock_sys->mutex is owned. */
 #define lock_mutex_own() (lock_sys->mutex.is_owned())
 
-/** Acquire the lock_sys->mutex. */
+/** Acquire the lock_sys->mutex.
+ * 获得一个锁，lock_sys->mutex 只有一个，这个本身也是一个原子操作
+ * 所以进入lock_sys的数据只能一个一个进入，此时可以去判定是不是有死锁
+ *
+ * */
 #define lock_mutex_enter() do {			\
 	mutex_enter(&lock_sys->mutex);		\
 } while (0)

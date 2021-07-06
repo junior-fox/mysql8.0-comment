@@ -433,6 +433,7 @@ lock_sec_rec_cons_read_sees(
 }
 
 /*********************************************************************//**
+ * 锁都通过lock_sys 来控制
 Creates the lock system at database start. */
 void
 lock_sys_create(
@@ -457,9 +458,9 @@ lock_sys_create(
 
 	lock_sys->timeout_event = os_event_create(0);
 
-	lock_sys->rec_hash = hash_create(n_cells);
-	lock_sys->prdt_hash = hash_create(n_cells);
-	lock_sys->prdt_page_hash = hash_create(n_cells);
+	lock_sys->rec_hash = hash_create(n_cells); //记录锁
+	lock_sys->prdt_hash = hash_create(n_cells); //谓词锁
+	lock_sys->prdt_page_hash = hash_create(n_cells); //谓词页锁   不得其解
 
 	if (!srv_read_only_mode) {
 		lock_latest_err_file = os_file_create_tmpfile(NULL);
