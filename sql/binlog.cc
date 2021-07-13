@@ -6948,6 +6948,9 @@ int MYSQL_BIN_LOG::new_file_without_locking(Format_description_log_event *extra_
   @param need_lock_log If true, this function acquires LOCK_log;
   otherwise the caller should already have acquired it.
 
+  在binlog 切换新文件的时候，会强制刷新一次 group replication 和 innodb的 redo log
+  这样使得数据库在recovery时 只需要检查最后一个binlog文件就可以了
+
   @retval 0 success
   @retval nonzero - error
 

@@ -434,6 +434,7 @@ lock_sec_rec_cons_read_sees(
 
 /*********************************************************************//**
  * 锁都通过lock_sys 来控制
+ * @param n_cells   最大数量是 buffer pool中最多能容纳的页数的5倍  。为什么是5倍，而不是3倍 或者8倍呢？
 Creates the lock system at database start. */
 void
 lock_sys_create(
@@ -1121,7 +1122,9 @@ lock_rec_has_expl(
 	ut_ad((precise_mode & LOCK_MODE_MASK) == LOCK_S
 	      || (precise_mode & LOCK_MODE_MASK) == LOCK_X);
 	ut_ad(!(precise_mode & LOCK_INSERT_INTENTION));
-
+        /**
+         * 先计算出当前需要锁的 block 和堆number 对这个
+         */
 	for (lock = lock_rec_get_first(lock_sys->rec_hash, block, heap_no);
 	     lock != NULL;
 	     lock = lock_rec_get_next(heap_no, lock)) {
@@ -1135,7 +1138,7 @@ lock_rec_has_expl(
 		    && !lock_get_wait(lock)
 		    && (!lock_rec_get_rec_not_gap(lock)
 			|| (precise_mode & LOCK_REC_NOT_GAP)
-			|| heap_no == PAGE_HEAP_NO_SUPREMUM)
+			|| heap_no == PAGE_HEAP_NO_SUPREMUM) //
 		    && (!lock_rec_get_gap(lock)
 			|| (precise_mode & LOCK_GAP)
 			|| heap_no == PAGE_HEAP_NO_SUPREMUM)) {
@@ -1893,7 +1896,7 @@ lock_rec_lock_fast(
 
 	DBUG_EXECUTE_IF("innodb_report_deadlock", return(LOCK_REC_FAIL););
 
-	lock_t*	lock = lock_rec_get_first_on_page(lock_sys->rec_hash, block);
+	lock_t*	lock = lock_rec_get_first_on_page(lock_sys->rec_hash, block);  //获取页的第一个锁
 
 	trx_t*	trx = thr_get_trx(thr);
 
@@ -1912,10 +1915,10 @@ lock_rec_lock_fast(
 	} else {
 		trx_mutex_enter(trx);
 
-		if (lock_rec_get_next_on_page(lock)
-		     || lock->trx != trx
-		     || lock->type_mode != (mode | LOCK_REC)
-		     || lock_rec_get_n_bits(lock) <= heap_no) {
+		if (lock_rec_get_next_on_page(lock) //在hash table 中是否有行锁
+		     || lock->trx != trx             //是否是当前事务
+		     || lock->type_mode != (mode | LOCK_REC)      //lock_mode + lock_type  判定加锁的类型是否是和当前的锁的类型相同
+		     || lock_rec_get_n_bits(lock) <= heap_no) {   //锁的范围被覆盖到
 
 			status = LOCK_REC_FAIL;
 		} else if (!impl) {
@@ -6144,6 +6147,7 @@ first tests if the query thread should anyway be suspended for some
 reason; if not, then puts the transaction and the query thread to the
 lock wait state and inserts a waiting request for a record x-lock to the
 lock queue.
+ 聚集索引的 下的行数据的更改
 @return DB_SUCCESS, DB_LOCK_WAIT, DB_DEADLOCK, or DB_QUE_THR_SUSPENDED */
 dberr_t
 lock_clust_rec_modify_check_and_lock(

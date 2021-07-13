@@ -166,21 +166,29 @@ trx_rseg_get_n_undo_tablespaces(
 /* Maximum number of transactions supported by a single rollback segment */
 #define TRX_RSEG_MAX_N_TRXS	(TRX_RSEG_N_SLOTS / 2)
 
-/** The rollback segment memory object */
+/** The rollback segment memory object
+ *  这个是单个回滚段
+ * */
 struct trx_rseg_t {
 	/*--------------------------------------------------------*/
 	/** rollback segment id == the index of its slot in the trx
-	system file copy */
+	system file copy
+	 回滚段的id，这个id其实是一个7个bit位的数据，所以它最大也就支持128个回滚段
+	 */
 	ulint				id;
 
 	/** mutex protecting the fields in this struct except id,space,page_no
 	which are constant */
 	RsegMutex			mutex;
 
-	/** space where the rollback segment header is placed */
+	/** space where the rollback segment header is placed
+	 * 在回滚表空间里的空间id
+	 * */
 	ulint				space;
 
-	/** page number of the rollback segment header */
+	/** page number of the rollback segment header
+	 *
+	 * */
 	ulint				page_no;
 
 	/** page size of the relevant tablespace */
@@ -197,7 +205,9 @@ struct trx_rseg_t {
 	/** List of update undo logs */
 	UT_LIST_BASE_NODE_T(trx_undo_t)	update_undo_list;
 
-	/** List of update undo log segments cached for fast reuse */
+	/** List of update undo log segments cached for fast reuse
+	 * 这个列表用来缓存update的slot 可用的都会slot都会返回 存储在这里
+	 * */
 	UT_LIST_BASE_NODE_T(trx_undo_t)	update_undo_cached;
 
 	/*--------------------------------------------------------*/
@@ -227,7 +237,9 @@ struct trx_rseg_t {
 	ulint				trx_ref_count;
 
 	/** If true, then skip allocating this rseg as it reside in
-	UNDO-tablespace marked for truncate. */
+	UNDO-tablespace marked for truncate.
+	 这个参数用来控制当前段能不能被用于分配，如果此时这个回滚段正在被truncate 时，这个段不能使用，应该进入到下一个回滚段进行操作
+	 */
 	bool				skip_allocation;
 };
 

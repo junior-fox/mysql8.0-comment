@@ -4377,13 +4377,16 @@ innobase_commit(
 
 	bool	read_only = trx->read_only || trx->id == 0;
 
+        /*主动提交事务 或者线程的状态变成自动提交  这里的begin是指的 当前的sql是begin ，
+         * 在mysql层begin会触发隐式提交触发commit，然后再执行begin
+         */
 	if (commit_trx
 	    || (!thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))) {
 
 		/* We were instructed to commit the whole transaction, or
 		this is an SQL statement end and autocommit is on */
 
-		/* We need current binlog position for mysqlbackup to work. */
+		/* We need current binlog position for mysql backup to work. */
 
 		if (!read_only) {
 
@@ -4426,7 +4429,9 @@ innobase_commit(
 			trx->mysql_log_offset = static_cast<int64_t>(pos);
 
 			/* Don't do write + flush right now. For group commit
-			to work we want to do the flush later. */
+			to work we want to do the flush later.
+			 先不提写入数据，也不flush数据 ，等待组提交的通知
+			 */
 			trx->flush_log_later = true;
 		}
 
@@ -4460,8 +4465,9 @@ innobase_commit(
 		transaction commit */
 
 		/* If we had reserved the auto-inc lock for some
-		table in this SQL statement we release it now */
-
+		table in this SQL statement we release it now
+		 每个语句结束之后都释放自增锁，自增锁是表锁。 不能被一个事务长期持有
+		 */
 		if (!read_only) {
 			lock_unlock_table_autoinc(trx);
 		}

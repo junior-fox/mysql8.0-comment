@@ -47,7 +47,7 @@ enum lock_mode {
 	LOCK_IS = 0,	/* intention shared */
 	LOCK_IX,	/* intention exclusive */
 	LOCK_S,		/* shared */
-	LOCK_X,		/* exclusive */
+	LOCK_X,		/* exclusive === 3  */
 	LOCK_AUTO_INC,	/* locks the auto-inc counter of a table
 			in an exclusive mode */
 	LOCK_NONE,	/* this is used elsewhere to note consistent read */

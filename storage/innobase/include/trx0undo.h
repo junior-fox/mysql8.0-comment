@@ -440,16 +440,23 @@ trx_undo_mem_free(
 
 #if !defined UNIV_HOTBACKUP && !defined UNIV_INNOCHECKSUM
 /** Transaction undo log memory object; this is protected by the undo_mutex
-in the corresponding transaction object */
+in the corresponding transaction object
+这就是一个undo 的slot
+
+ */
 
 struct trx_undo_t {
 	/*-----------------------------*/
 	ulint		id;		/*!< undo log slot number within the
-					rollback segment */
-	ulint		type;		/*!< TRX_UNDO_INSERT or
+					rollback segment
+					slot 的id
+					*/
+	ulint		type;		/*!< TRX_UNDO_INSERT or   这个slot的类型 只有两种 一个是insert 一个是update
 					TRX_UNDO_UPDATE */
 	ulint		state;		/*!< state of the corresponding undo log
-					segment */
+					segment
+					回滚的状态
+					*/
 	ibool		del_marks;	/*!< relevant only in an update undo
 					log: this is TRUE if the transaction may
 					have delete marked records, because of
@@ -459,7 +466,9 @@ struct trx_undo_t {
 					has updated an externally stored
 					field */
 	trx_id_t	trx_id;		/*!< id of the trx assigned to the undo
-					log */
+					log
+					事务的id ，表示这个这个slot所属的事务
+					*/
 	XID		xid;		/*!< X/Open XA transaction
 					identification */
 	ibool		dict_operation;	/*!< TRUE if a dict operation trx */
